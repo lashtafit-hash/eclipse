@@ -118,6 +118,8 @@ em{font-style:italic;color:var(--plum)}
 .consent{display:flex;gap:14px;align-items:flex-start;font-size:15px;line-height:1.55;color:var(--ink);cursor:pointer}
 .consent input{flex:none;width:20px;height:20px;margin:2px 0 0;accent-color:var(--plum);cursor:pointer}
 .consent span{min-width:0}
+.consent-lead{display:block;font-weight:600}
+.consent-sub{display:block;font-size:13px;color:var(--muted);margin-top:4px}
 .consent .opt-tag{display:block;font:600 10px/1.6 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:2px}
 .alert{border:1px solid var(--err);background:var(--err-bg);padding:18px;display:flex;flex-direction:column;gap:12px}
 .alert p{margin:0;color:var(--ink);font-size:15px}
@@ -413,7 +415,7 @@ function gate(){
         <p class="err-msg" id="privErr" hidden></p>
         <label class="consent" for="cMarketing">
           <input type="checkbox" id="cMarketing" ${lead.marketing?"checked":""}>
-          <span>Yes, I’d like to receive emails from Eclipse AestheticsSI about treatments, special offers, and updates. I understand that I can unsubscribe at any time.<span class="opt-tag">Optional</span></span>
+          <span><strong class="consent-lead">Yes! Send me Eclipse’s exclusive offers and special promotions by email.</strong><span class="consent-sub">I agree to receive promotional emails from Eclipse AestheticsSI. I can unsubscribe anytime.</span></span>
         </label>
       </div>
 
