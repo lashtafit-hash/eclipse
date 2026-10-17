@@ -1,0 +1,602 @@
+<title>Eclipse Anti-Aging Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Archivo:wght@400;500;600&display=swap">
+<style>
+/* Layout: one centered column like the Eclipse mobile site — sticky brand bar, one question per screen, results as stacked treatment cards, dark treatment ticker at the foot. */
+:root{
+  --bg:#F3EBEA; --surface:#FDFBFA; --ink:#1A1213; --muted:#6E6668;
+  --plum:#7F7488; --plum-ink:#6B6075; --line:#DDD3D2; --on-plum:#FFFFFF;
+  --band:#1B1314; --band-ink:#E9DEDC; --sel:#EFE8F0;
+  --err:#A1403F; --err-bg:#FBF0EF;
+  --display:"Newsreader", "Libre Caslon Text", Georgia, "Times New Roman", serif;
+  --body:"Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1B1314; --surface:#241A1B; --ink:#F1E8E6; --muted:#B3A8A8;
+  --plum:#8A7E93; --plum-ink:#C3B6CB; --line:#3B2F30; --on-plum:#FFFFFF;
+  --band:#0F0A0B; --band-ink:#D9CCCA; --sel:#2E2430; --err:#E58C88; --err-bg:#2D1A1A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1B1314; --surface:#241A1B; --ink:#F1E8E6; --muted:#B3A8A8;
+  --plum:#8A7E93; --plum-ink:#C3B6CB; --line:#3B2F30; --on-plum:#FFFFFF;
+  --band:#0F0A0B; --band-ink:#D9CCCA; --sel:#2E2430; --err:#E58C88; --err-bg:#2D1A1A; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar-in{max-width:720px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.mark{width:38px;height:38px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;flex:none}
+.mark span{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--plum);background:linear-gradient(90deg,var(--plum) 50%,transparent 50%)}
+.brand{font-family:var(--display);font-size:clamp(15px,4vw,19px);letter-spacing:-.01em;text-transform:uppercase;white-space:nowrap;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.btn{display:inline-flex;align-items:center;justify-content:center;background:var(--plum);color:var(--on-plum);border:0;font:600 12px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;padding:14px 18px;text-decoration:none;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn:focus-visible,.opt:focus-visible,.ghost:focus-visible,.cta:focus-visible{outline:2px solid var(--plum-ink);outline-offset:3px}
+.btn[disabled]{opacity:.4;cursor:not-allowed;filter:none}
+.btn.wide{width:100%;padding:20px;font-size:13px;letter-spacing:.24em}
+
+main{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:40px 64px}
+.eyebrow{font:600 12px/1.4 var(--body);letter-spacing:.24em;text-transform:uppercase;color:var(--plum-ink)}
+h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:-.02em;text-wrap:balance;margin:0}
+h1{font-size:clamp(40px,11vw,68px);line-height:1.02}
+h2{font-size:clamp(30px,8vw,46px);line-height:1.08}
+h3{font-size:clamp(26px,6.5vw,34px);line-height:1.1}
+em{font-style:italic;color:var(--plum)}
+.lede{color:var(--muted);font-size:18px;max-width:34em;margin:0}
+.stack{display:flex;flex-direction:column;gap:24px}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{border:1px solid var(--line);padding:10px 14px;font:600 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--ink)}
+
+/* progress */
+.prog{display:flex;align-items:center;gap:14px}
+.prog-track{flex:1;height:2px;background:var(--line);position:relative}
+.prog-fill{position:absolute;inset:0 auto 0 0;background:var(--plum);transition:width .4s ease}
+.prog-n{font:500 13px/1 var(--body);letter-spacing:.14em;color:var(--muted);font-variant-numeric:tabular-nums}
+.hint{font:600 11px/1.4 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;gap:16px;align-items:flex-start;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);color:var(--ink);padding:18px 18px;font:400 16px/1.5 var(--body);cursor:pointer;transition:border-color .2s,background .2s}
+.opt:hover{border-color:var(--plum)}
+.opt .k{flex:none;width:28px;height:28px;border:1px solid var(--line);display:grid;place-items:center;font:500 14px/1 var(--display);color:var(--plum-ink);transition:all .2s}
+.opt[aria-pressed="true"]{border-color:var(--plum);background:var(--sel)}
+.opt[aria-pressed="true"] .k{background:var(--plum);border-color:var(--plum);color:var(--on-plum)}
+.opt.single .k{border-radius:50%}
+.opt[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:8px}
+.ghost{background:none;border:0;color:var(--plum-ink);font:600 12px/1 var(--body);letter-spacing:.22em;text-transform:uppercase;cursor:pointer;padding:14px 0}
+.ghost[hidden]{display:none}
+
+/* results */
+.card{background:var(--surface);border:1px solid var(--line);padding:clamp(24px,7vw,44px);display:flex;flex-direction:column;gap:16px}
+.card .n{font:600 13px/1 var(--body);letter-spacing:.2em;color:var(--plum-ink);font-variant-numeric:tabular-nums}
+.card p{margin:0;color:var(--muted)}
+.card .sub{font-family:var(--display);font-style:italic;font-size:20px;color:var(--plum);line-height:1.35}
+.at{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:4px}
+.at b{font:600 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--ink);margin-right:4px}
+.at span{font-size:14px;border:1px solid var(--line);padding:6px 10px;color:var(--ink)}
+.cta{font:600 12px/1 var(--body);letter-spacing:.22em;text-transform:uppercase;color:var(--plum-ink);text-decoration:none;align-self:flex-start;padding:8px 0;border-bottom:1px solid currentColor}
+.dark{background:var(--band);color:var(--band-ink);padding:clamp(28px,8vw,48px);display:flex;flex-direction:column;gap:20px}
+.dark h2{color:#F4ECEA}
+.dark h2 em{color:#CDBFD3}
+.dark p{margin:0;color:#BFB2B1}
+.dark .eyebrow{color:#CDBFD3}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line)}
+.summary div{background:var(--surface);padding:16px;min-width:0}
+.summary dt{font:600 10px/1.3 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.summary dd{margin:0;font-family:var(--display);font-size:18px;line-height:1.3}
+.summary .full{grid-column:1/-1}
+
+.ticker{background:var(--band);color:var(--band-ink);overflow:hidden;padding-block:16px;white-space:nowrap}
+.ticker-in{display:inline-flex;gap:28px;animation:tick 38s linear infinite;font:600 12px/1 var(--body);letter-spacing:.26em;text-transform:uppercase}
+.ticker-in i{font-style:normal;opacity:.5}
+@keyframes tick{to{transform:translateX(-50%)}}
+.screen{animation:in .45s ease both}
+@keyframes in{from{transform:translateY(8px)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.ticker-in,.screen{animation:none}.prog-fill{transition:none}}
+.fine{font-size:13px;color:var(--muted);margin:0}
+.fine a,.consent a{color:var(--plum-ink);text-underline-offset:3px}
+
+/* email gate */
+.form{display:flex;flex-direction:column;gap:20px}
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{font:600 11px/1.3 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--ink)}
+.field label small{font:400 12px/1 var(--body);letter-spacing:.04em;text-transform:none;color:var(--muted);margin-left:6px}
+.field input{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--ink);font:400 17px/1.4 var(--body);padding:16px;border-radius:0;-webkit-appearance:none;appearance:none}
+.field input:focus{outline:none;border-color:var(--plum);box-shadow:0 0 0 1px var(--plum)}
+.field input[aria-invalid="true"]{border-color:var(--err)}
+.err-msg{font-size:14px;color:var(--err);margin:0}
+.consents{display:flex;flex-direction:column;gap:14px;border-top:1px solid var(--line);padding-top:20px}
+.consent{display:flex;gap:14px;align-items:flex-start;font-size:15px;line-height:1.55;color:var(--ink);cursor:pointer}
+.consent input{flex:none;width:20px;height:20px;margin:2px 0 0;accent-color:var(--plum);cursor:pointer}
+.consent span{min-width:0}
+.consent .opt-tag{display:block;font:600 10px/1.6 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.alert{border:1px solid var(--err);background:var(--err-bg);padding:18px;display:flex;flex-direction:column;gap:12px}
+.alert p{margin:0;color:var(--ink);font-size:15px}
+.alert .row{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.note{border:1px solid var(--line);background:var(--surface);padding:14px 16px;font-size:15px;color:var(--ink);margin:0}
+.btn[aria-busy="true"]{cursor:progress}
+.hp{position:absolute;left:-5000px;width:1px;height:1px;overflow:hidden}
+
+/* offers */
+.offers-head{display:flex;flex-direction:column;gap:10px;padding-top:12px}
+.offer{background:var(--sel);border:1px solid var(--plum);padding:clamp(24px,7vw,40px);display:flex;flex-direction:column;gap:14px;position:relative}
+.offer::before{content:"";position:absolute;inset:6px;border:1px dashed color-mix(in srgb,var(--plum) 45%,transparent);pointer-events:none}
+.offer > *{position:relative}
+.offer .eyebrow{font-size:11px}
+.offer h3{font-size:clamp(28px,7vw,38px)}
+.price{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.price b{font:400 clamp(40px,11vw,56px)/1 var(--display);color:var(--ink);letter-spacing:-.02em;font-variant-numeric:lining-nums}
+.price s{font-size:16px;color:var(--muted)}
+.offer p{margin:0;color:var(--ink)}
+.terms{margin:0;padding:16px 0 0;border-top:1px solid var(--line);list-style:none;display:flex;flex-direction:column;gap:10px}
+.terms-label{font:600 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.terms li{font-size:15px;line-height:1.55;color:var(--ink);padding-left:18px;position:relative}
+.terms li::before{content:"";position:absolute;left:0;top:.7em;width:7px;height:1px;background:var(--plum-ink)}
+.terms li.terms-label::before{display:none}
+.card-top{display:flex;align-items:center;gap:14px}
+.cat{font:600 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.offer-img{display:block;width:100%;max-width:100%;height:auto;border:1px solid var(--line)}
+h2:focus,h1:focus{outline:none}
+.code{font:600 13px/1 var(--body);letter-spacing:.18em;border:1px solid var(--plum);padding:3px 7px;white-space:nowrap}
+.offer .btn{align-self:flex-start;margin-top:4px}
+</style>
+
+<header class="bar"><div class="bar-in">
+  <div class="mark" aria-hidden="true"><span></span></div>
+  <div class="brand">Eclipse AestheticsSI</div>
+  <a class="btn" id="topBook" href="https://eclipse-aestheticssi.com/" target="_blank" rel="noopener">Book now</a>
+</div></header>
+
+<main id="app" aria-live="polite"></main>
+
+<div class="ticker" aria-hidden="true"><div class="ticker-in" id="ticker"></div></div>
+
+<script>
+/* =====================================================================
+   SETTINGS — the only block that needs editing.
+   ===================================================================== */
+const CONFIG = {
+  /* Mailchimp — taken from the supplied Embedded Form code
+     (Audience "Eclipse aesthetics", form "Eclipse Anti-Aging Quiz"). */
+  MAILCHIMP_FORM_ACTION: "https://gmail.us14.list-manage.com/subscribe/post?u=98fb72aab84b6194cc2e1736c&id=2c92e47c97&f_id=00408ae1f0",
+  MAILCHIMP_TAG_VALUE:   "11267110",          // hidden "tags" field = Anti-Aging Quiz
+  MAILCHIMP_GDPR_FIELD:  "",                  // not present in the supplied code
+
+  /* Eclipse links — PLACEHOLDERS until the clinic confirms them */
+  BOOKING_URL:   "https://www.joinblvd.com/b/eclipseaesthetics/widget#/visit-type",   // Boulevard, same link as the site's Book Now
+  PRIVACY_URL:   "https://eclipse-aestheticssi.com/privacy-policy/",
+  TERMS_URL:     "",                                    // optional: other legal page
+  GENERAL_URL:   "https://eclipse-aestheticssi.com/",   // "Explore Your Options" (General Refresh)
+  RESULTS_URLS: {                                       // TODO: result / gallery pages
+    A: "https://eclipse-aestheticssi.com/gallery/",   // See Botox Results
+    B: "https://eclipse-aestheticssi.com/gallery/",   // See Jawline Results
+    C: "https://eclipse-aestheticssi.com/gallery/",   // See Facial Balancing Results
+    D: "https://eclipse-aestheticssi.com/#services"   // Explore Skin Treatments
+  },
+
+  /* Approved promo image files (Botox Promo, Jawline Promo, Bestie Pass).
+     IMAGE SLOTS: put the real file URL here; "" = text-only card. */
+  OFFER_IMAGES: { botox: "", jaw: "", bestie: "" },
+
+  /* Privacy acknowledgment checkbox must be ticked to continue */
+  REQUIRE_PRIVACY_ACK: true,
+
+  SUBMIT_TIMEOUT_MS: 15000
+};
+/* ===================================================================== */
+
+/* ---------- Approved questions (client-review document) ---------- */
+const Q = [
+  {q:"Look back at a photo of yourself from five years ago. What looks different today?", hint:"Select all that apply", type:"multi", excl:"E",
+   o:{A:"I notice more lines on my forehead, between my brows, or around my eyes.",
+      B:"My jawline looks less defined than it used to.",
+      C:"My cheeks look less full than before.",
+      D:"My skin looks less smooth, even, or bright.",
+      E:"I haven’t noticed much change. I’m interested in keeping my skin and appearance looking fresh."}},
+  {q:"When do you notice these changes the most?", hint:"Select all that apply", type:"multi", excl:"E",
+   o:{A:"When I smile, frown, or raise my eyebrows.",
+      B:"In side-profile photos or from certain angles.",
+      C:"Even when my face is relaxed, it can look tired.",
+      D:"In natural light or without makeup.",
+      E:"There’s no one specific moment—I just want a refreshed look."}},
+  {q:"If you could wake up tomorrow and see a change, what would you want to notice?", hint:"Select up to three", type:"multi", max:3,
+   o:{A:"Softer forehead lines and lines around my eyes.",
+      B:"A more defined jawline and chin.",
+      C:"More fullness in my cheeks and a less tired-looking face.",
+      D:"Smoother, brighter-looking skin.",
+      E:"An overall fresher, more rested look."}},
+  {q:"How much of a change are you looking for?", hint:"Choose one", type:"single",
+   o:{A:"Just a subtle refresh.",
+      B:"A noticeable improvement that still looks like me.",
+      C:"A more visible change.",
+      D:"I’m not sure yet—I’d like to see my options."}},
+  {q:"Have you tried any of these treatments before?", hint:"Select all that apply", type:"multi", excl:"E",
+   o:{A:"Botox or another wrinkle relaxer.",
+      B:"Dermal fillers.",
+      C:"Microneedling, PRP, or chemical peels.",
+      D:"Other aesthetic treatments.",
+      E:"Not yet—this would be my first time."}},
+  {q:"When are you thinking about getting started?", hint:"Choose one", type:"single",
+   o:{A:"As soon as possible.",
+      B:"Within the next month.",
+      C:"In the next one to three months.",
+      D:"Just exploring for now."}}
+];
+
+/* ---------- Approved weighted scoring ----------
+   Categories A–D are scored independently from Q1–Q3 only.
+   Q1 +2, Q2 +1, Q3 +2 (max 5). Answer E scores nothing.
+   Eligible at >= 2 points. Sorted by score, ties A > B > C > D.
+   Max three sections shown; none eligible -> General Refresh.
+   Q4–Q6 are never read here. */
+const CATS = ["A","B","C","D"];
+const WEIGHTS = [2,1,2];
+const THRESHOLD = 2, MAX_SECTIONS = 3;
+
+function scoreAnswers(q1, q2, q3){
+  const scores = {A:0,B:0,C:0,D:0};
+  [q1,q2,q3].forEach((sel,i)=>{ (sel||[]).forEach(k=>{ if(k in scores) scores[k]+=WEIGHTS[i]; }); });
+  const eligible = CATS.filter(c=>scores[c]>=THRESHOLD)
+    .sort((a,b)=> scores[b]-scores[a] || CATS.indexOf(a)-CATS.indexOf(b));
+  return {
+    scores,
+    eligible,
+    shown: eligible.slice(0, MAX_SECTIONS),
+    extra: eligible.slice(MAX_SECTIONS),
+    general: eligible.length===0
+  };
+}
+
+/* ---------- Approved result texts ---------- */
+const R = {
+  A:{label:"Expression lines", title:"Smoother-looking skin, a fresher expression",
+    body:"Softening forehead lines, frown lines, and crow’s feet can make the upper face look smoother and more refreshed. Botox works by temporarily relaxing the muscles responsible for these expression lines.",
+    at:["Botox / Tox"], cta:"See Botox Results"},
+  B:{label:"Jawline & profile", title:"More definition through the jawline",
+    body:"A more defined jawline and balanced chin can sharpen the look of the lower face and profile. When additional structure or volume is appropriate, strategically placed filler may help improve definition. Your provider will evaluate whether filler is the right approach for the changes you want to address.",
+    at:["Jawline Filler","Chin Filler","Facial Balancing"], cta:"See Jawline Results"},
+  C:{label:"Facial volume", title:"A fuller, more refreshed look",
+    body:"Changes in cheek volume can affect the way the midface looks, even without prominent wrinkles. Carefully placed filler may help restore fullness in selected areas and improve the balance of your features. The best approach depends on your anatomy and the amount of change you want.",
+    at:["Cheek Filler","Facial Balancing"], cta:"See Facial Balancing Results"},
+  D:{label:"Skin quality", title:"Smoother texture. Brighter-looking skin.",
+    body:"If texture, uneven tone, or dullness is part of the picture, improving skin quality can make a visible difference. Microneedling, PRP, and PRX Peel address different skin concerns and are not interchangeable. An Eclipse provider can recommend the most relevant option after assessing your skin.",
+    at:["Microneedling","PRP","PRX Peel"], cta:"Explore Skin Treatments"}
+};
+const GENERAL = {title:"A fresh look starts with the right plan",
+  body:"There isn’t one standout concern in your answers, and that’s completely fine. A consultation is the best way to explore where a subtle refresh, skin treatment, or other aesthetic option could make the most meaningful difference for you.",
+  cta:"Explore Your Options"};
+
+/* ---------- Approved promotions ---------- */
+const OFFER_FOR = {A:"botox", B:"jaw", C:"bestie", D:"bestie", general:"bestie"};
+const OFFERS = {
+  botox:{eyebrow:"Botox special", title:"10% off Botox",
+    terms:["Available to new Eclipse AestheticsSI clients only.",
+      "Valid for Botox treatments only.",
+      'To redeem the offer, mention the promo code <span class="code">BOTOX</span> when booking or at your appointment.']},
+  jaw:{eyebrow:"Jawline special", price:"$1,300", was:"Regular price: $1,500.", save:"Save $200.",
+    terms:["Includes two syringes of jawline filler.",
+      "Chin filler is not included.",
+      "If an additional syringe is needed for chin correction, it is charged separately.",
+      "The treatment plan is discussed with the provider before proceeding."]},
+  bestie:{eyebrow:"Bestie promo", title:"$25 off each",
+    terms:["The referred friend must be a first-time Eclipse client.",
+      "Both participants can receive $25 off any treatment.",
+      "The appointments do not need to be on the same date.",
+      "When both attend together, each receives $25 off during that visit.",
+      "When attending separately, the new client receives $25 off at their first appointment.",
+      "The referring client’s $25 discount becomes available at their next appointment after the referred friend completes their visit.",
+      "Both participants must mention each other’s names when booking so the clinic can verify the referral."]}
+};
+
+function offersFor(res){
+  const keys = res.general ? ["general"] : res.shown;
+  return [...new Set(keys.map(k=>OFFER_FOR[k]))];
+}
+
+/* ---------- State ---------- */
+const GATE = Q.length, RESULTS = Q.length + 1;
+let step = -1;
+let ans = Q.map(()=>[]);
+let lead = {fname:"", email:"", privacy:false, marketing:false};
+let sub = null;
+let sending = false;
+const app = document.getElementById("app");
+document.getElementById("topBook").href = CONFIG.BOOKING_URL;
+
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function pad(n){return String(n).padStart(2,"0")}
+
+function render(){
+  window.scrollTo(0,0);
+  if(step<0) return intro();
+  if(step===GATE) return gate();
+  if(step>=RESULTS) return results();
+  question();
+  const h=app.querySelector("h2"); if(h){h.setAttribute("tabindex","-1");h.focus({preventScroll:true});}
+}
+
+function intro(){
+  app.innerHTML = `<section class="screen stack">
+    <div class="eyebrow">Eclipse anti-aging quiz</div>
+    <h1>What’s changed about your face in the <em>last 5 years?</em></h1>
+    <p class="lede">A few quick questions can help you explore treatments for smoother skin, a more defined profile, and a refreshed look. See your personalized Eclipse treatment overview at the end.</p>
+    <div class="chips"><span class="chip">6 questions</span><span class="chip">Board-certified NP</span><span class="chip">Natural-looking results</span></div>
+    <button class="btn wide" id="start">Start My Quiz</button>
+  </section>`;
+  document.getElementById("start").onclick=()=>{step=0;render()};
+}
+
+function question(){
+  const q=Q[step], sel=ans[step];
+  const opts = Object.entries(q.o).map(([k,t])=>{
+    const on=sel.includes(k);
+    const full = q.max && !on && sel.length>=q.max;
+    return `<button class="opt ${q.type==="single"?"single":""}" data-k="${k}" aria-pressed="${on}" ${full?'aria-disabled="true"':""}>
+      <span class="k">${k}</span><span>${esc(t)}</span></button>`;
+  }).join("");
+  app.innerHTML = `<section class="screen stack">
+    <div class="prog"><span class="prog-n">${pad(step+1)} / ${pad(Q.length)}</span>
+      <div class="prog-track"><div class="prog-fill" style="width:${(step+1)/Q.length*100}%"></div></div></div>
+    <div class="stack" style="gap:12px"><h2>${esc(q.q)}</h2><div class="hint">${q.hint}${q.max?` · ${sel.length}/${q.max} chosen`:""}</div></div>
+    <div class="opts" role="group" aria-label="${esc(q.hint)}">${opts}</div>
+    <div class="nav">
+      <button class="ghost" id="back">← Back</button>
+      <button class="btn" id="next" ${sel.length?"":"disabled"}>${step===Q.length-1?"Continue":"Next"}</button>
+    </div>
+  </section>`;
+  app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>pick(b.dataset.k));
+  document.getElementById("back").onclick=()=>{step--;render()};
+  document.getElementById("next").onclick=()=>{if(ans[step].length){step++;render()}};
+}
+
+function pick(k){
+  const q=Q[step]; let s=ans[step];
+  if(q.type==="single"){
+    ans[step]=[k]; question();
+    const at=step;
+    setTimeout(()=>{ if(step===at && ans[at][0]===k){step++;render()} },320);
+    return;
+  }
+  if(s.includes(k)) s=s.filter(x=>x!==k);
+  else{
+    if(q.max && s.length>=q.max) return;
+    if(q.excl===k) s=[k];
+    else s=s.filter(x=>x!==q.excl).concat(k);
+  }
+  ans[step]=s; question();
+  const b=app.querySelector(`.opt[data-k="${k}"]`); if(b) b.focus();
+}
+
+/* ---------- Email form ---------- */
+function docLink(url, text){
+  return url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${text}</a>` : `<u title="Link not set yet">${text}</u>`;
+}
+
+function gate(){
+  const legal=[CONFIG.PRIVACY_URL&&docLink(CONFIG.PRIVACY_URL,"Privacy Policy"),CONFIG.TERMS_URL&&docLink(CONFIG.TERMS_URL,"Terms")].filter(Boolean).join(" · ");
+  app.innerHTML = `<section class="screen stack">
+    <div class="prog"><span class="prog-n">${pad(Q.length)} / ${pad(Q.length)}</span>
+      <div class="prog-track"><div class="prog-fill" style="width:100%"></div></div></div>
+    <div class="eyebrow">Your personalized results</div>
+    <h2>Your results are <em>ready.</em></h2>
+    <p class="lede">Complete the form below to see your personalized treatment recommendations and unlock special offers from Eclipse AestheticsSI.</p>
+
+    <form class="form" id="leadForm" novalidate>
+      <div class="field">
+        <label for="fname">First Name <small>Optional</small></label>
+        <input id="fname" type="text" autocomplete="given-name" maxlength="60" value="${esc(lead.fname)}">
+      </div>
+      <div class="field">
+        <label for="email">Email Address</label>
+        <input id="email" type="email" inputmode="email" autocomplete="email" required value="${esc(lead.email)}" aria-describedby="emailErr">
+        <p class="err-msg" id="emailErr" hidden></p>
+      </div>
+      <div class="hp" aria-hidden="true"><input id="hpField" type="text" tabindex="-1" autocomplete="off"></div>
+
+      <div class="consents">
+        <label class="consent" for="cPrivacy">
+          <input type="checkbox" id="cPrivacy" ${lead.privacy?"checked":""} aria-describedby="privErr">
+          <span>I have read the ${docLink(CONFIG.PRIVACY_URL,"Privacy Policy")} and understand how Eclipse AestheticsSI will use the information I provide for this quiz.</span>
+        </label>
+        <p class="err-msg" id="privErr" hidden></p>
+        <label class="consent" for="cMarketing">
+          <input type="checkbox" id="cMarketing" ${lead.marketing?"checked":""}>
+          <span>Yes, I’d like to receive emails from Eclipse AestheticsSI about treatments, special offers, and updates. I understand that I can unsubscribe at any time.<span class="opt-tag">Optional</span></span>
+        </label>
+      </div>
+
+      <div id="formAlert"></div>
+
+      <button class="btn wide" id="submitBtn" type="submit">See my results →</button>
+      <p class="fine">Your results are for informational purposes and do not replace a consultation with a qualified provider.</p>
+      ${legal?`<p class="fine">${legal}</p>`:""}
+    </form>
+    <div class="nav"><button class="ghost" id="back">← Back</button></div>
+  </section>`;
+
+  const g=id=>document.getElementById(id);
+  const sync=()=>{lead.fname=g("fname").value.trim();lead.email=g("email").value.trim();
+    lead.privacy=g("cPrivacy").checked;lead.marketing=g("cMarketing").checked;};
+  const f=g("leadForm");
+  f.addEventListener("input",sync); f.addEventListener("change",sync);
+  f.addEventListener("submit",e=>{e.preventDefault();sync();submitLead();});
+  g("back").onclick=()=>{sync();step=Q.length-1;render()};
+}
+
+function showFieldError(id, inputId, msg){
+  const el=document.getElementById(id), inp=document.getElementById(inputId);
+  if(msg){el.textContent=msg;el.hidden=false;inp.setAttribute("aria-invalid","true");}
+  else{el.hidden=true;inp.removeAttribute("aria-invalid");}
+}
+
+function submitLead(){
+  if(sending) return;                                     // repeated-click guard
+  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(lead.email);
+  const privOk=!CONFIG.REQUIRE_PRIVACY_ACK || lead.privacy;
+  showFieldError("emailErr","email", lead.email ? (emailOk?"":"Enter a valid email address, like name@example.com.") : "Enter your email address to see your results.");
+  showFieldError("privErr","cPrivacy", privOk?"":"Please confirm you have read the Privacy Policy to continue.");
+  if(!emailOk){document.getElementById("email").focus();return;}
+  if(!privOk){document.getElementById("cPrivacy").focus();return;}
+  if(document.getElementById("hpField").value) return;   // bot trap
+
+  // No marketing consent: nothing is sent to Mailchimp.
+  if(!lead.marketing){ sub={state:"none"}; step=RESULTS; render(); return; }
+
+  setSending(true);
+  mcSubscribe(lead.email, lead.fname)
+    .then(r=>{ sending=false; sub=r; step=RESULTS; render(); })
+    .catch(err=>{ setSending(false); showAlert(err); });
+}
+
+function setSending(on){
+  sending=on;
+  const b=document.getElementById("submitBtn"); if(!b) return;
+  b.disabled=on; b.setAttribute("aria-busy",on?"true":"false");
+  b.textContent=on?"Sending…":"See my results →";
+  document.getElementById("formAlert").innerHTML="";
+}
+
+function showAlert(err){
+  const msg = err.code==="not_configured"
+    ? "Email sign-up isn’t connected yet, so we couldn’t add you to the Eclipse email list."
+    : err.code==="mailchimp"
+      ? `We couldn’t add you to the Eclipse email list. ${esc(err.msg)}`
+      : "We couldn’t reach our email service. Check your connection and try again.";
+  document.getElementById("formAlert").innerHTML = `<div class="alert" role="alert">
+    <p>${msg}</p>
+    <div class="row">
+      <button type="button" class="btn" id="retryBtn">Try again</button>
+      <button type="button" class="ghost" id="skipBtn">See my results without subscribing</button>
+    </div></div>`;
+  document.getElementById("retryBtn").onclick=()=>submitLead();
+  document.getElementById("skipBtn").onclick=()=>{ sub={state:"skipped"}; step=RESULTS; render(); };
+  document.getElementById("retryBtn").focus();
+}
+
+/* Mailchimp Embedded Form endpoint, JSON-P variant (post-json).
+   Sends ONLY: EMAIL, FNAME (if given), tags, honeypot. No quiz data. No API key. */
+function buildMailchimpUrl(email, fname, cb){
+  const action=(CONFIG.MAILCHIMP_FORM_ACTION||"").trim().replace(/&amp;/g,"&");
+  if(!/list-manage\.com\/subscribe\/post\?/.test(action)) return null;
+  const url=new URL(action.replace("/subscribe/post?","/subscribe/post-json?"));
+  const u=url.searchParams.get("u"), id=url.searchParams.get("id");
+  url.searchParams.set("EMAIL",email);
+  if(fname) url.searchParams.set("FNAME",fname);
+  if(CONFIG.MAILCHIMP_TAG_VALUE) url.searchParams.set("tags",CONFIG.MAILCHIMP_TAG_VALUE);
+  if(CONFIG.MAILCHIMP_GDPR_FIELD) url.searchParams.set(CONFIG.MAILCHIMP_GDPR_FIELD,"Y");
+  if(u&&id) url.searchParams.set(`b_${u}_${id}`,"");
+  url.searchParams.set("c",cb);
+  return url;
+}
+
+function classifyMailchimp(data){
+  const text=String((data&&data.msg)||"").replace(/<[^>]*>/g," ").replace(/^\d+\s*-\s*/,"").replace(/\s+/g," ").trim();
+  if(data&&data.result==="success") return {ok:true, state:/confirm/i.test(text)?"confirm":"subscribed"};
+  if(/already subscribed/i.test(text)) return {ok:true, state:"already"};
+  if(/unsubscribed|compliance|cleaned|permanently deleted/i.test(text))
+    return {ok:false, err:{code:"mailchimp", msg:"This email can’t be re-added automatically because it was previously unsubscribed. You can still see your results."}};
+  if(/too many/i.test(text))
+    return {ok:false, err:{code:"mailchimp", msg:"Too many sign-up attempts for this email. Please wait a few minutes and try again."}};
+  return {ok:false, err:{code:"mailchimp", msg:text||"Please try again."}};
+}
+
+function mcSubscribe(email, fname){
+  return new Promise((resolve,reject)=>{
+    const cb="mcCb_"+Date.now()+"_"+Math.floor(Math.random()*1e6);
+    let url; try{ url=buildMailchimpUrl(email,fname,cb); }catch(e){ url=null; }
+    if(!url) return reject({code:"not_configured"});
+    const s=document.createElement("script");
+    let done=false;
+    const cleanup=()=>{done=true;clearTimeout(t);try{delete window[cb]}catch(e){window[cb]=undefined}s.remove();};
+    const t=setTimeout(()=>{ if(!done){cleanup();reject({code:"network"});} }, CONFIG.SUBMIT_TIMEOUT_MS);
+    window[cb]=data=>{ if(done) return; cleanup(); const r=classifyMailchimp(data); r.ok?resolve({state:r.state}):reject(r.err); };
+    s.onerror=()=>{ if(!done){cleanup();reject({code:"network"});} };
+    s.src=url.toString();
+    document.body.appendChild(s);
+  });
+}
+
+/* ---------- Results ---------- */
+function resultCard(k, i, multi){
+  const r=R[k];
+  return `<article class="card" data-cat="${k}">
+    <div class="card-top">${multi?`<span class="n">${pad(i+1)}</span>`:""}<span class="cat">${r.label}</span></div>
+    <h3>${r.title}</h3>
+    <p>${r.body}</p>
+    <div class="at"><b>Available at Eclipse</b>${r.at.map(a=>`<span>${a}</span>`).join("")}</div>
+    <a class="cta" href="${esc(CONFIG.RESULTS_URLS[k])}" target="_blank" rel="noopener">${r.cta} →</a>
+  </article>`;
+}
+
+function offerCard(id){
+  const x=OFFERS[id], img=CONFIG.OFFER_IMAGES[id];
+  return `<article class="offer" data-offer="${id}">
+    ${img?`<img class="offer-img" src="${esc(img)}" alt="${esc(x.eyebrow)} — Eclipse AestheticsSI" loading="lazy">`:""}
+    <div class="eyebrow">${x.eyebrow}</div>
+    ${x.price?`<div class="price"><b>${x.price}</b></div><p>${x.was} <strong>${x.save}</strong></p>`:`<h3>${x.title}</h3>`}
+    <ul class="terms"><li class="terms-label">Terms</li>${x.terms.map(t=>`<li>${t}</li>`).join("")}</ul>
+    <a class="btn" href="${esc(CONFIG.BOOKING_URL)}" target="_blank" rel="noopener">Book an appointment</a>
+  </article>`;
+}
+
+function results(){
+  const res=scoreAnswers(ans[0],ans[1],ans[2]);
+  const multi=res.shown.length>1;
+  const offerIds=offersFor(res);
+  const status={
+    subscribed:"You’re subscribed to emails from Eclipse AestheticsSI.",
+    confirm:"Almost done: please confirm your subscription using the link in the email from Eclipse AestheticsSI.",
+    already:"This email is already on the Eclipse AestheticsSI email list."
+  }[sub&&sub.state];
+
+  let head, body;
+  if(res.general){
+    head=`<h1>${GENERAL.title.replace("right plan","<em>right plan</em>")}</h1>`;
+    body=`<article class="card" data-cat="general">
+      <p>${GENERAL.body}</p>
+      <a class="cta" href="${esc(CONFIG.GENERAL_URL)}" target="_blank" rel="noopener">${GENERAL.cta} →</a>
+    </article>`;
+  }else if(multi){
+    const abd = res.shown.length===3 && ["A","B","D"].every(k=>res.shown.includes(k));
+    head=`<h1>${abd?"Smoother skin. A more defined profile. <em>A refreshed look.</em>":"Your personalized Eclipse <em>treatment overview</em>"}</h1>
+      <p class="lede">Your answers point to a few areas worth exploring together. Here’s how Eclipse can approach each one:</p>`;
+    body=res.shown.map((k,i)=>resultCard(k,i,true)).join("")
+      + `<p class="lede">An Eclipse consultation brings these options together into a treatment plan based on your face, your goals, and the provider’s assessment.</p>`;
+  }else{
+    head=`<h1>Your personalized Eclipse <em>treatment overview</em></h1>`;
+    body=resultCard(res.shown[0],0,false);
+  }
+  const extra = res.extra.length
+    ? `<p class="note">Your answers also showed interest in ${res.extra.map(k=>R[k].label.toLowerCase()).join(" and ")}. You can talk this through with your provider at your consultation.</p>` : "";
+
+  app.innerHTML = `<section class="screen stack">
+    <div class="eyebrow">Your personalized results</div>
+    ${status?`<p class="note" role="status">${status}</p>`:""}
+    ${head}
+    ${body}
+    ${extra}
+    <div class="offers-head">
+      <div class="eyebrow">Eclipse offers</div>
+      <h2>${offerIds.length>1?"Offers":"An offer"} <em>for you</em></h2>
+      ${offerIds.length>1?`<p class="fine">Each offer has its own terms, listed below.</p>`:""}
+    </div>
+    ${offerIds.map(offerCard).join("")}
+    <section class="dark">
+      <div class="eyebrow">Next step</div>
+      <h2>Let’s put together a plan <em>that works for you.</em></h2>
+      <p>Book a consultation at Eclipse to discuss which treatments are right for your face, your goals, and your timeline.</p>
+      <a class="btn wide" href="${esc(CONFIG.BOOKING_URL)}" target="_blank" rel="noopener">Book Your Consultation</a>
+    </section>
+    <p class="fine" style="text-align:center">Your results are for informational purposes and do not replace a consultation with a qualified provider.</p>
+    <button class="ghost" id="again" style="align-self:center">Retake the quiz</button>
+  </section>`;
+  document.getElementById("again").onclick=()=>{ans=Q.map(()=>[]);sub=null;step=-1;render()};
+}
+
+/* exposed for testing only */
+window.EclipseQuiz={scoreAnswers, offersFor, buildMailchimpUrl, classifyMailchimp};
+
+const T=["Botox","Lip Flip","Jawline Filler","Cheek Filler","Facial Balancing","Microneedling","PRP Facial","PRX Peel","PRP Hair Restoration"];
+document.getElementById("ticker").innerHTML=[...T,...T].map(t=>`<span>${t}</span><i>◐</i>`).join("");
+render();
+</script>
